@@ -1,6 +1,6 @@
 {
   "name": "create-react-app",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "keywords": [
     "react"
   ],
@@ -9,9 +9,6 @@
   "license": "BSD-3-Clause",
   "bugs": {
     "url": "https://github.com/facebookincubator/create-react-app/issues"
-  },
-  "engines": {
-    "node": ">=4.0.0"
   },
   "files": [
     "index.js"
@@ -23,6 +20,7 @@
     "chalk": "^1.1.1",
     "cross-spawn": "^4.0.0",
     "minimist": "^1.2.0",
+    "path-exists": "^3.0.0",
     "semver": "^5.0.3"
   }
 }

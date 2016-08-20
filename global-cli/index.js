@@ -41,6 +41,7 @@ var spawn = require('cross-spawn');
 var chalk = require('chalk');
 var semver = require('semver');
 var argv = require('minimist')(process.argv.slice(2));
+var pathExists = require('path-exists');
 
 /**
  * Arguments:
@@ -54,50 +55,53 @@ var argv = require('minimist')(process.argv.slice(2));
  */
 var commands = argv._;
 if (commands.length === 0) {
+  if (argv.version) {
+    console.log('create-react-app version: ' + require('./package.json').version);
+    process.exit();
+  }
   console.error(
     'Usage: create-react-app <project-directory> [--verbose]'
   );
   process.exit(1);
 }
 
-if (argv.version) {
-  console.log('create-react-app version: ' + require('./package.json').version);
-  process.exit();
-}
-
 createApp(commands[0], argv.verbose, argv['scripts-version']);
 
 function createApp(name, verbose, version) {
-  if (fs.existsSync(name)) {
-    console.log('The directory `' + name + '` already exists. Aborting.');
+  var root = path.resolve(name);
+  if (!pathExists.sync(name)) {
+    fs.mkdirSync(root);
+  } else if (!isGitHubBoilerplate(root)) {
+    console.log('The directory `' + name + '` contains file(s) that could conflict. Aborting.');
     process.exit(1);
   }
 
-  var root = path.resolve(name);
   var appName = path.basename(root);
-
   console.log(
     'Creating a new React app in ' + root + '.'
   );
   console.log();
-
-  fs.mkdirSync(root);
 
   var packageJson = {
     name: appName,
     version: '0.0.1',
     private: true,
   };
-  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify(packageJson));
+  fs.writeFileSync(
+    path.join(root, 'package.json'),
+    JSON.stringify(packageJson, null, 2)
+  );
+  var originalDirectory = process.cwd();
   process.chdir(root);
 
   console.log('Installing packages. This might take a couple minutes.');
   console.log('Installing react-scripts from npm...');
+  console.log();
 
-  run(root, appName, version, verbose);
+  run(root, appName, version, verbose, originalDirectory);
 }
 
-function run(root, appName, version, verbose) {
+function run(root, appName, version, verbose, originalDirectory) {
   var args = [
     'install',
     verbose && '--verbose',
@@ -112,6 +116,8 @@ function run(root, appName, version, verbose) {
       return;
     }
 
+    checkNodeVersion();
+
     var scriptsPath = path.resolve(
       process.cwd(),
       'node_modules',
@@ -120,7 +126,7 @@ function run(root, appName, version, verbose) {
       'init.js'
     );
     var init = require(scriptsPath);
-    init(root, appName, verbose);
+    init(root, appName, verbose, originalDirectory);
   });
 }
 
@@ -157,5 +163,18 @@ function checkNodeVersion() {
       process.version,
       packageJson.engines.node
     );
+    process.exit(1);
   }
+}
+
+// Check if GitHub boilerplate compatible
+// https://github.com/facebookincubator/create-react-app/pull/368#issuecomment-237875655
+function isGitHubBoilerplate(root) {
+  var validFiles = [
+    '.DS_Store', 'Thumbs.db', '.git', '.gitignore', 'README.md', 'LICENSE'
+  ];
+  return fs.readdirSync(root)
+    .every(function(file) {
+      return validFiles.indexOf(file) >= 0;
+    });
 }

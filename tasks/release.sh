@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright (c) 2015-present, Facebook, Inc.
 # All rights reserved.
 #
@@ -29,6 +30,12 @@ if [ -n "$(git status --porcelain)" ]; then
   echo "Your git status is not clean. Aborting.";
   exit 1;
 fi
+
+# Update deps
+rm -rf node_modules
+rm -rf ~/.npm
+npm cache clear
+npm install
 
 # Force dedupe
 npm dedupe
